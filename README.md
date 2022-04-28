@@ -1,2 +1,2 @@
 # Easier-Heatmap
-The GUI of 'complexheatmap' tool kit 
+The GUI of 'ComplexHeatmap' toolkit 
