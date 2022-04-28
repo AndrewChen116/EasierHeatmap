@@ -17,16 +17,17 @@ server <- function(input, output, session){
           matrix.df <- NULL
           cat("No matrix file imported\n")
         }
+        matrix.df
       },
       warning = function(war){
         print(war)
+        matrix.df <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         matrix.df <- NULL
       }
     )
-    matrix.df
   })
   ann_c_table <- reactive({
     tryCatch(
@@ -42,17 +43,18 @@ server <- function(input, output, session){
           ann_c.df <- NULL
           cat("No column annotation file imported\n")
         }
+        ann_c.df
       },
       warning = function(war){
         print(war)
         cat("Error in column annotation file\n")
+        ann_c.df <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         ann_c.df <- NULL
       }
     )
-    ann_c.df
   })
   ann_r_table <- reactive({
     tryCatch(
@@ -68,16 +70,17 @@ server <- function(input, output, session){
           ann_r.df <- NULL
           cat("No row annotation file imported\n")
         }
+        ann_r.df
       },
       warning = function(war){
         print(war)
+        ann_r.df <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         ann_r.df <- NULL
       }
     )
-    ann_r.df
   })
   
   # color setting
@@ -90,16 +93,17 @@ server <- function(input, output, session){
         }else{
           ann_c.term <- NULL
         }
+        ann_c.term
       },
       warning = function(war){
         print(war)
+        ann_c.term <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         ann_c.term <- NULL
       }
     )
-    ann_c.term
   })
   ann_r_term <- reactive({
     tryCatch(
@@ -110,22 +114,23 @@ server <- function(input, output, session){
         }else{
           ann_r.term <- NULL
         }
+        ann_r.term
       },
       warning = function(war){
         print(war)
+        ann_r.term <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         ann_r.term <- NULL
       }
     )
-    ann_r.term
   })
   
   color_m <- reactive({
     tryCatch(
       {
-        if(!is.null(input$point_m) & !is.null(input$color_m)){
+        if(nchar(input$point_m)>0 & nchar(input$color_m)>0){
           color_m <- colorRamp2(
             input$point_m %>% strsplit(.,split = ',') %>% unlist %>% as.numeric,
             input$color_m %>% strsplit(.,split = ',') %>% unlist
@@ -133,16 +138,17 @@ server <- function(input, output, session){
         }else{
           color_m <- NULL
         }
+        color_m
       },
       warning = function(war){
         print(war)
+        color_m <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         color_m <- NULL
       }
     )
-    color_m
   })
   color_c <- reactive({
     tryCatch(
@@ -155,6 +161,7 @@ server <- function(input, output, session){
         }else{
           color_c <- NULL
         }
+        color_c
       },
       warning = function(war){
         print(war)
@@ -164,7 +171,6 @@ server <- function(input, output, session){
         color_c <- NULL
       }
     )
-    color_c
   })
   color_r <- reactive({
     tryCatch(
@@ -177,6 +183,7 @@ server <- function(input, output, session){
         }else{
           color_r <- NULL
         }
+        color_r
       },
       warning = function(war){
         print(war)
@@ -186,7 +193,6 @@ server <- function(input, output, session){
         color_r <- NULL
       }
     )
-    color_r
   })
 
   # generate annotation
@@ -224,6 +230,7 @@ server <- function(input, output, session){
         }else{
           ha_c <- NULL
         }
+        ha_c
       },
       warning = function(war){
         print(war)
@@ -234,7 +241,6 @@ server <- function(input, output, session){
         ha_c <- NULL
       }
     )
-    ha_c
   })
   ann_r_ha <- reactive({
     tryCatch(
@@ -268,6 +274,7 @@ server <- function(input, output, session){
         }else{
           ha_r <- NULL
         }
+        ha_r
       },
       warning = function(war){
         print(war)
@@ -278,11 +285,10 @@ server <- function(input, output, session){
         ha_r <- NULL
       }
     )
-    ha_r
   })
   
   # plotting
-  plot_heatmap <- reactive({
+  plot_heatmap <- eventReactive(c(input$doPlot), {
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
@@ -292,35 +298,51 @@ server <- function(input, output, session){
           ha_r <- ann_r_ha()
           col_m <- color_m()
           
-          if(!is.null(col_m)){col = col_m}
+          if(length(col_m)>0){
+            hp <- Heatmap(
+              mt,
+              col = col_m,
+              cluster_rows = as.logical(input$doRowClustering),
+              cluster_columns = as.logical(input$doColClustering),
+              show_column_names = as.logical(input$showColName),
+              show_row_names = as.logical(input$showRowName),
+              name = "Value",
+              show_heatmap_legend = T,
+              top_annotation = ha_c,
+              left_annotation = ha_r
+            )
+          }else{
+            hp <- Heatmap(
+              mt,
+              cluster_rows = as.logical(input$doRowClustering),
+              cluster_columns = as.logical(input$doColClustering),
+              show_column_names = as.logical(input$showColName),
+              show_row_names = as.logical(input$showRowName),
+              name = "Value",
+              show_heatmap_legend = T,
+              top_annotation = ha_c,
+              left_annotation = ha_r
+            )
+          }
           
-          hp <- Heatmap(
-            mt,
-            col,
-            cluster_rows = as.logical(input$doRowClustering),
-            cluster_columns = as.logical(input$doColClustering),
-            show_column_names = as.logical(input$showColName),
-            show_row_names = as.logical(input$showRowName),
-            name = "Value",
-            show_heatmap_legend = T,
-            top_annotation = ha_c,
-            left_annotation = ha_r
-          )
+          
         }else{
           hp <- NULL
         }
+        hp
       },
       warning = function(war){
         print(war)
+        hp <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         hp <- NULL
       }
     )
-    hp
+    
   })
-  plot_pure_heatmap <- reactive({
+  plot_pure_heatmap <- eventReactive(c(input$doPlot), {
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
@@ -337,42 +359,55 @@ server <- function(input, output, session){
           if(!is.null(input$row_annot_file$datapath)){
             ha_r@anno_list[["r_label"]]@show_legend <- F
             ha_r@anno_list[["r_label"]]@name_param[["show"]] <- F
-            
           }
           
-          if(!is.null(col_m)){col = col_m}
+          if(length(col_m)>0){
+            hp <- Heatmap(
+              mt,
+              col = col_m,
+              cluster_rows = as.logical(input$doRowClustering),
+              cluster_columns = as.logical(input$doColClustering),
+              show_column_names = F,
+              show_row_names = F,
+              name = "Value",
+              show_heatmap_legend = F,
+              top_annotation = ha_c,
+              left_annotation = ha_r
+            )
+          }else{
+            hp <- Heatmap(
+              mt,
+              cluster_rows = as.logical(input$doRowClustering),
+              cluster_columns = as.logical(input$doColClustering),
+              show_column_names = F,
+              show_row_names = F,
+              name = "Value",
+              show_heatmap_legend = F,
+              top_annotation = ha_c,
+              left_annotation = ha_r
+            )
+          }
           
-          hp <- Heatmap(
-            mt,
-            col,
-            cluster_rows = as.logical(input$doRowClustering),
-            cluster_columns = as.logical(input$doColClustering),
-            show_column_names = F,
-            show_row_names = F,
-            name = "Value",
-            show_heatmap_legend = F,
-            top_annotation = ha_c,
-            left_annotation = ha_r
-          )
         }else{
           hp <- NULL
         }
+        hp
       },
       warning = function(war){
         print(war)
+        hp <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
         hp <- NULL
       }
     )
-    hp
   })
   
   # output
  
   output$hp <- renderPlot(plot_heatmap())
-  output$hp_little <- renderPlot(plot_heatmap())
+  output$hp_little <- renderPlot(plot_pure_heatmap())
   output$col_term <- renderText(ann_c_term())
   output$row_term <- renderText(ann_r_term())
   output$col_term <- renderText(ann_c_term())

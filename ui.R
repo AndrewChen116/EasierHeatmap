@@ -94,7 +94,6 @@ ui <- navbarPage(
               width = 3
             )
           ),
-          br(),
           h6("Annotation",style = "color:#97CBFF"),
           fluidRow(
             column(
@@ -122,15 +121,12 @@ ui <- navbarPage(
           h6("set the point of main legend",style = "color:#97CBFF"),
           textInput(
             "point_m",
-            "",
-            "1,0.5,0"
+            ""
           ),
           h6("set the color of main legend",style = "color:#97CBFF"),
           textInput(
             "color_m",
-            "",
-            "black,grey,white"
-            
+            ""
           ),
           br(),
           h6("set the color of column annotation legend",style = "color:#97CBFF"),
