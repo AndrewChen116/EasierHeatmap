@@ -7,25 +7,26 @@ server <- function(input, output, session){
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
-          matrix.df <- input$matrix_file$datapath %>%
+          mt <- input$matrix_file$datapath %>%
             read.csv(sep = "\t",
                      row.names = 1,
                      check.names = F) %>% 
             as.matrix()
+          
           cat("Imported matrix file checked\n")
         }else{
-          matrix.df <- NULL
+          mt <- NULL
           cat("No matrix file imported\n")
         }
-        matrix.df
+        mt
       },
       warning = function(war){
         print(war)
-        matrix.df <- NULL
+        mt <- NULL
       },
       error = function(err){
         print(conditionMessage(err));
-        matrix.df <- NULL
+        mt <- NULL
       }
     )
   })
@@ -201,11 +202,15 @@ server <- function(input, output, session){
       {
         if(!is.null(input$matrix_file$datapath) & !is.null(input$col_annot_file$datapath)){
           mt <- matrix_table()
-          
           ann_c <- ann_c_table()
           ann_c <- ann_c[colnames(mt),]
-          
           col_c <- color_c()
+          if(input$doTranspose){
+            whichAnno = "row"
+          }else{
+            whichAnno = "column"
+          }
+          
           if(length(col_c)>0){
             col = list(
               c_label = col_c
@@ -213,13 +218,16 @@ server <- function(input, output, session){
             ha_c <- HeatmapAnnotation(
               c_label = ann_c[[1]],
               col = col,
-              show_legend = T
+              show_legend = T,
+              which = whichAnno
             )
             
           }else{
             ha_c <- HeatmapAnnotation(
               c_label = ann_c[[1]],
-              show_legend = T
+              show_legend = T,
+              which = whichAnno
+              
             )
           }
           
@@ -247,24 +255,30 @@ server <- function(input, output, session){
       {
         if(!is.null(input$matrix_file$datapath) & !is.null(input$row_annot_file$datapath)){
           mt <- matrix_table()
-          
           ann_r <- ann_r_table()
           ann_r <- ann_r[row.names(mt),]
-          
           col_r <- color_r()
+          if(input$doTranspose){
+            whichAnno = "column"
+          }else{
+            whichAnno = "row"
+          }
+          
           if(length(col_r)>0){
             col = list(
               r_label = col_r
             )
-            ha_r <- rowAnnotation(
+            ha_r <- HeatmapAnnotation(
               r_label = ann_r[[1]],
               col = col,
-              show_legend = T
+              show_legend = T,
+              which = whichAnno
             )
           }else{
-            ha_r <- rowAnnotation(
+            ha_r <- HeatmapAnnotation(
               r_label = ann_r[[1]],
-              show_legend = T
+              show_legend = T,
+              which = whichAnno
             )
           }
 
@@ -292,11 +306,18 @@ server <- function(input, output, session){
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
-          mt <- matrix_table()
           
-          ha_c <- ann_c_ha()
-          ha_r <- ann_r_ha()
-          col_m <- color_m()
+          if(input$doTranspose){
+            mt <- matrix_table() %>% t()
+            ha_r <- ann_c_ha()
+            ha_c <- ann_r_ha()
+            col_m <- color_m()
+          }else{
+            mt <- matrix_table()
+            ha_c <- ann_c_ha()
+            ha_r <- ann_r_ha()
+            col_m <- color_m()
+          }
           
           if(length(col_m)>0){
             hp <- Heatmap(
@@ -346,20 +367,39 @@ server <- function(input, output, session){
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
-          mt <- matrix_table()
-          
-          ha_c <- ann_c_ha()
-          ha_r <- ann_r_ha()
-          col_m <- color_m()
-          
-          if(!is.null(input$col_annot_file$datapath)){
-            ha_c@anno_list[["c_label"]]@show_legend <- F
-            ha_c@anno_list[["c_label"]]@name_param[["show"]] <- F
+          if(input$doTranspose){
+            mt <- matrix_table() %>% t()
+            ha_r <- ann_c_ha()
+            ha_c <- ann_r_ha()
+            col_m <- color_m()
+            
+            if(!is.null(input$col_annot_file$datapath)){
+              ha_c@anno_list[["r_label"]]@show_legend <- F
+              ha_c@anno_list[["r_label"]]@name_param[["show"]] <- F
+            }
+            if(!is.null(input$row_annot_file$datapath)){
+              ha_r@anno_list[["c_label"]]@show_legend <- F
+              ha_r@anno_list[["c_label"]]@name_param[["show"]] <- F
+            }
+            
+          }else{
+            mt <- matrix_table()
+            ha_c <- ann_c_ha()
+            ha_r <- ann_r_ha()
+            col_m <- color_m()
+            
+            if(!is.null(input$col_annot_file$datapath)){
+              ha_c@anno_list[["c_label"]]@show_legend <- F
+              ha_c@anno_list[["c_label"]]@name_param[["show"]] <- F
+            }
+            if(!is.null(input$row_annot_file$datapath)){
+              ha_r@anno_list[["r_label"]]@show_legend <- F
+              ha_r@anno_list[["r_label"]]@name_param[["show"]] <- F
+            }
+            
           }
-          if(!is.null(input$row_annot_file$datapath)){
-            ha_r@anno_list[["r_label"]]@show_legend <- F
-            ha_r@anno_list[["r_label"]]@name_param[["show"]] <- F
-          }
+          
+          
           
           if(length(col_m)>0){
             hp <- Heatmap(

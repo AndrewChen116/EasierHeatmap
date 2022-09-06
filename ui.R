@@ -60,7 +60,7 @@ ui <- navbarPage(
       br(),
       br(),
       ## version info
-      h6("20220426_KLC_v0.1.0",align="right",style = "color:#6C6C6C"),
+      h6("20220426_KLC_v0.2.0",align="right",style = "color:#6C6C6C"),
       h6("Powered by ComplexHeatmap",align="right",style = "color:#6C6C6C"),
       ## width of sidebarPanel
       width = 3
@@ -75,7 +75,7 @@ ui <- navbarPage(
       tabsetPanel(
         tabPanel(
           h5("Setting",style = "color:#97CBFF"),
-          h6("Clustering",style = "color:#97CBFF"),
+          h6("Hierarchical Clustering",style = "color:#97CBFF"),
           fluidRow(
             column(
               checkboxInput(
@@ -89,6 +89,25 @@ ui <- navbarPage(
               checkboxInput(
                 "doRowClustering",
                 "Row clustering",
+                c(T)
+              ),
+              width = 3
+            )
+          ),
+          h6("SEM-based Clustering",style = "color:#97CBFF"),
+          fluidRow(
+            column(
+              checkboxInput(
+                "doSEMClustering",
+                "Column clustering",
+                c(T)
+              ),
+              width = 3
+            ),
+            column(
+              checkboxInput(
+                "doSEMClustering",
+                "Column clustering",
                 c(T)
               ),
               width = 3
@@ -113,11 +132,22 @@ ui <- navbarPage(
               width = 3
             )
           ),
+          h6("Transpose",style = "color:#97CBFF"),
+          fluidRow(
+            column(
+              checkboxInput(
+                "doTranspose",
+                "Transpose the matrix",
+                c(F)
+              ),
+              width = 3
+            )
+          ),
           
           width = 1
         ),
         tabPanel(
-          h5("Color",style = "color:#97CBFF"),
+          h5("Palette",style = "color:#97CBFF"),
           h6("set the point of main legend",style = "color:#97CBFF"),
           textInput(
             "point_m",
