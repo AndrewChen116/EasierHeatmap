@@ -190,11 +190,13 @@ server <- function(input, output, session){
   })
   
   # clustering to figure out markers
-  clustered_matrix <- eventReactive(c(input$doPlot),{
+  clustered_matrix <- eventReactive(
+    c(input$doEBClustering,input$doEBClustering, input$EEL_cutoff,input$EBC_cutoff),
+    {
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
-          if(input$doEELClustering){
+          if(input$doEELClustering|input$doEBClustering){
             ## import matrix
             mt <- matrix_table()
             if(input$doTranspose){
@@ -659,7 +661,9 @@ server <- function(input, output, session){
       }
     )
   })
-  plot_marker_heatmap <- eventReactive(c(input$doPlot), {
+  plot_marker_heatmap <- eventReactive(
+    c(input$doEBClustering,input$doEBClustering, input$EEL_cutoff,input$EBC_cutoff),
+    {
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
@@ -708,14 +712,24 @@ server <- function(input, output, session){
   
   # observe
   observe({
-    check <- (input$doEELClustering)|(input$doEBClustering)
-    updateCheckboxInput(session, "doEELClustering", value = check)
+    check <- (!input$doEELClustering)&(input$doEBClustering)
+    if(check)updateSliderInput(session, "EEL_cutoff", value = 0)
   })
   observe({
     maxExp <- max_exp()
     minExp <- min_exp()
     updateSliderInput(session, "EEL_cutoff", min = minExp, max = maxExp,
                       value = minExp, step = (maxExp-minExp)/10)
+  })
+  observe({
+    mt <- matrix_table()
+    if(!is.null(mt)){
+      n_col <- ncol(mt)
+    }else{
+      n_col <- 2
+    }
+    updateSliderInput(session, "EBC_cutoff", max = floor(log2(n_col)),
+                      value = floor(log2(n_col)))
   })
   
   # output
@@ -739,6 +753,20 @@ server <- function(input, output, session){
       print(plot_pure_heatmap())
       print(plot_marker_heatmap())
       graphics.off()
+    }
+  )
+  
+  output$marker.tsv <- downloadHandler(
+    filename = function() {
+      paste0(Sys.Date(), "_marker.tsv")
+    },
+    content = function(file) {
+      write.table(
+        clustered_matrix(),
+        file,
+        sep = "\t",
+        quote = F
+      )
     }
   )
 }

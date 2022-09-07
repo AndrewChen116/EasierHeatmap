@@ -1,11 +1,36 @@
-  library(shiny)
-  library(ComplexHeatmap)
-  library(circlize)
-  library(tidyverse)
-  library(parallel)
-  library(bslib)
-  library(DT)
+##### Description #####
+  # aim: easily apply "ComplexHeatmap" package to plot heatmap of genome data
+  # maintainer: AndrewChen116 
+##### version info #####
+  # _                           
+  # platform       x86_64-w64-mingw32          
+  # arch           x86_64                      
+  # os             mingw32                     
+  # system         x86_64, mingw32             
+  # status                                     
+  # major          4                           
+  # minor          0.5                         
+  # year           2021                        
+  # month          03                          
+  # day            31                          
+  # svn rev        80133                       
+  # language       R                           
+  # version.string R version 4.0.5 (2021-03-31)
+  # nickname       Shake and Throw
+##### package ##### 
+options(repos = BiocManager::repositories())
+getOption("repos")
 
+library(shiny)
+library(ComplexHeatmap)
+library(circlize)
+library(tidyverse)
+library(parallel)
+library(bslib)
+library(DT)
+
+
+##### ui #####
 css <- "mark{
   padding: 0;
   background-color:#FFFF93;
@@ -53,7 +78,7 @@ ui <- navbarPage(
           width = 3
         ),
         column(
-          downloadButton("DL_marker", "marker"),
+          downloadButton("marker.tsv", "TSV"),
           width = 3
         )
       ),
@@ -78,8 +103,8 @@ ui <- navbarPage(
       ## output table
       tabsetPanel(
         tabPanel(
-          h5("Table",style = "color:#97CBFF"),
-          h6("Here presents example table from raw matrix",style = "color:#97CBFF"),
+          h5("Preview",style = "color:#97CBFF"),
+          h6("Here presents example table from raw data",style = "color:#97CBFF"),
           textOutput('tbEstimate'),
           h5("   ",style = "color:#97CBFF"),
           dataTableOutput("exampleTb")
@@ -183,7 +208,7 @@ ui <- navbarPage(
             column(
               checkboxInput(
                 "doEELClustering",
-                "EEL-based method",
+                "EEL-based selection",
                 c(F)
               ),
               width = 3
@@ -192,7 +217,7 @@ ui <- navbarPage(
             column(
               checkboxInput(
                 "doEBClustering",
-                "Entropy-based method",
+                "Entropy-based selection",
                 c(F)
               ),
               width = 3
@@ -212,7 +237,7 @@ ui <- navbarPage(
               sliderInput(
                 "EBC_cutoff",
                 NULL,
-                min = 0, max = 5, sep = 0.5, value = 5
+                min = 0, max = 4, step = 0.1, value = 4
               ),
               width = 3
             ),
