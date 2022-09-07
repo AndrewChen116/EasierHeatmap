@@ -46,11 +46,15 @@ ui <- navbarPage(
         column(
           actionButton(inputId="doPlot", label=" Plot",
                        icon=icon(name = "palette")),
-          width = 6
+          width = 3
         ),
         column(
-          downloadButton("heatmap.pdf", "Download"),
-          width = 6
+          downloadButton("heatmap.pdf", "PDF"),
+          width = 3
+        ),
+        column(
+          downloadButton("DL_marker", "marker"),
+          width = 3
         )
       ),
       ## print execution time
@@ -60,7 +64,7 @@ ui <- navbarPage(
       br(),
       br(),
       ## version info
-      h6("20220426_KLC_v0.2.0",align="right",style = "color:#6C6C6C"),
+      h6("20220907_KLC_v0.2.0",align="right",style = "color:#6C6C6C"),
       h6("Powered by ComplexHeatmap",align="right",style = "color:#6C6C6C"),
       ## width of sidebarPanel
       width = 3
@@ -73,6 +77,13 @@ ui <- navbarPage(
       
       ## output table
       tabsetPanel(
+        tabPanel(
+          h5("Table",style = "color:#97CBFF"),
+          h6("Here presents example table from raw matrix",style = "color:#97CBFF"),
+          textOutput('tbEstimate'),
+          h5("   ",style = "color:#97CBFF"),
+          dataTableOutput("exampleTb")
+        ),
         tabPanel(
           h5("Setting",style = "color:#97CBFF"),
           h6("Hierarchical Clustering",style = "color:#97CBFF"),
@@ -89,25 +100,6 @@ ui <- navbarPage(
               checkboxInput(
                 "doRowClustering",
                 "Row clustering",
-                c(T)
-              ),
-              width = 3
-            )
-          ),
-          h6("SEM-based Clustering",style = "color:#97CBFF"),
-          fluidRow(
-            column(
-              checkboxInput(
-                "doSEMClustering",
-                "Column clustering",
-                c(T)
-              ),
-              width = 3
-            ),
-            column(
-              checkboxInput(
-                "doSEMClustering",
-                "Column clustering",
                 c(T)
               ),
               width = 3
@@ -151,12 +143,14 @@ ui <- navbarPage(
           h6("set the point of main legend",style = "color:#97CBFF"),
           textInput(
             "point_m",
-            ""
+            NULL,
+            "0,0.5,1"
           ),
           h6("set the color of main legend",style = "color:#97CBFF"),
           textInput(
             "color_m",
-            ""
+            NULL,
+            "black,orange,gold"
           ),
           br(),
           h6("set the color of column annotation legend",style = "color:#97CBFF"),
@@ -181,7 +175,56 @@ ui <- navbarPage(
                      width = "700px",
                      height = "550px"),
           width = 1
-        )
+        ),
+        tabPanel(
+          h5("Marker",style = "color:#97CBFF"),
+          h6(" ",style = "color:#97CBFF"),
+          fluidRow(
+            column(
+              checkboxInput(
+                "doEELClustering",
+                "EEL-based method",
+                c(F)
+              ),
+              width = 3
+            ),
+            column(width = 1),
+            column(
+              checkboxInput(
+                "doEBClustering",
+                "Entropy-based method",
+                c(F)
+              ),
+              width = 3
+            )
+          ),
+          fluidRow(
+            column(
+              sliderInput(
+                "EEL_cutoff",
+                NULL,
+                min = 0, max = 1, value = 0
+              ),
+              width = 3
+            ),
+            column(width = 1),
+            column(
+              sliderInput(
+                "EBC_cutoff",
+                NULL,
+                min = 0, max = 5, sep = 0.5, value = 5
+              ),
+              width = 3
+            ),
+            column(
+              plotOutput("hp_marker",
+                         width = "700px",
+                         height = "550px"),
+              width = 9
+            )
+          ),
+         
+        ),
       ),
       ## width of mainPanel
       width = 9
