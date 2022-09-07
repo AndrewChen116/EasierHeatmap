@@ -1,0 +1,7 @@
+## 20220907 v0.2.0
+- add matrix transpose function
+- add matrix preview section
+- add marker identification section
+  icluding EEL method & entropy-based method
+- update the pdf download function
+- add marker table download function
