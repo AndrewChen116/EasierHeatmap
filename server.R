@@ -2,7 +2,7 @@ rm(list = ls())
 options(shiny.maxRequestSize=30*1024^2) 
 
 server <- function(input, output, session){
-  # Matrix table input 
+  # Matrix & annotation input 
   matrix_table <- reactive({
     tryCatch(
       {
@@ -80,6 +80,222 @@ server <- function(input, output, session){
       error = function(err){
         print(conditionMessage(err));
         ann_r.df <- NULL
+      }
+    )
+  })
+  
+  # Matrix properties
+  table_estimate <- reactive({
+    tryCatch(
+      {
+        if(!is.null(input$matrix_file$datapath)){
+          mt <- matrix_table()
+          n_row <- nrow(mt)
+          n_col <- ncol(mt)
+          txt <- paste0("ROW( ",n_row," ) X COL( ",n_col," )")
+          
+        }else{
+          txt <- NULL
+        }
+        txt
+      },
+      warning = function(war){
+        print(war)
+        txt <- NULL
+      },
+      error = function(err){
+        print(conditionMessage(err));
+        txt <- NULL
+      }
+    )
+  })
+  example_table <- reactive({
+    tryCatch(
+      {
+        if(!is.null(input$matrix_file$datapath)){
+          mt <- matrix_table()
+          n_row <- nrow(mt)
+          n_col <- ncol(mt)
+          
+          if(n_row<10 & n_col<5){
+            mt <- mt[c(1:n_row),c(1:n_col)]
+          }else if(n_row>=10 & n_col<5){
+            mt <- mt[c(1:10),c(1:n_col)]
+          }else if(n_row<10 & n_col>=5){
+            mt <- mt[c(1:n_row),c(1:5)]
+          }else{
+            mt <- mt[c(1:10),c(1:5)]
+          }
+          
+          cat("Example table generated\n")
+        }else{
+          mt <- NULL
+          cat("No Example table\n")
+        }
+        mt
+      },
+      warning = function(war){
+        print(war)
+        mt <- NULL
+      },
+      error = function(err){
+        print(conditionMessage(err));
+        mt <- NULL
+      }
+    )
+  })
+  max_exp <- reactive({
+    tryCatch(
+      {
+        if(!is.null(input$matrix_file$datapath)){
+          mt <- matrix_table()
+          exp <- max(mt)
+          
+        }else{
+          exp <- 1
+        }
+        exp
+      },
+      warning = function(war){
+        print(war)
+        exp <- NULL
+      },
+      error = function(err){
+        print(conditionMessage(err));
+        exp <- NULL
+      }
+    )
+  })
+  min_exp <- reactive({
+    tryCatch(
+      {
+        if(!is.null(input$matrix_file$datapath)){
+          mt <- matrix_table()
+          exp <- min(mt)
+          
+        }else{
+          exp <- 0
+        }
+        exp
+      },
+      warning = function(war){
+        print(war)
+        exp <- NULL
+      },
+      error = function(err){
+        print(conditionMessage(err));
+        exp <- NULL
+      }
+    )
+  })
+  
+  # clustering to figure out markers
+  clustered_matrix <- eventReactive(c(input$doPlot),{
+    tryCatch(
+      {
+        if(!is.null(input$matrix_file$datapath)){
+          if(input$doEELClustering){
+            ## import matrix
+            mt <- matrix_table()
+            if(input$doTranspose){
+              mt <- t(mt)
+            }
+            
+            ## estimate the diff between 1st and 2nd value in hypo- and hyper-expression set
+            diff.lt <- row.names(mt) %>% lapply(
+              function(row_id){
+                hyper.set <- mt[row_id,] %>% sort(decreasing = T)
+                hypo.set <- mt[row_id,] %>% sort()
+                
+                hyper.diff <- hyper.set[1]-hyper.set[2]
+                hypo.diff <- hypo.set[1]-hypo.set[2]
+                
+                c(hyper.diff,hypo.diff)
+              }
+            )
+            names(diff.lt) <- row.names(mt)
+            
+            ## filter out the samples according to the threshold
+            exam.set <- names(diff.lt) %>% lapply(
+              function(row_id){
+                diff.set <- diff.lt[[row_id]]
+                if((diff.set[1]>=input$EEL_cutoff)|(abs(diff.set[2])>=input$EEL_cutoff)){
+                  T
+                }else{
+                  F
+                }
+              }
+            ) %>% unlist
+            
+            mt <- mt[exam.set,]
+            diff.lt <- diff.lt[exam.set]
+            names(diff.lt) <- row.names(mt)
+            
+            ## merge annotation and filtered matrix
+            annot.df <- mt %>% as.data.frame %>%  mutate(
+              "hyper_exp" = rep(NA,length(diff.lt)),
+              "hypo_exp" = rep(NA,length(diff.lt)),
+              "hyper_id" = rep(NA,length(diff.lt)),
+              "hypo_id" = rep(NA,length(diff.lt)),
+            )
+            
+            ## merge annotation and filtered matrix
+            if(length(diff.lt)>=1){
+              for(i in 1:length(diff.lt)){
+                annot.df$hyper_exp[i] <- diff.lt[[i]][1]
+                annot.df$hypo_exp[i] <- diff.lt[[i]][2]
+                annot.df$hyper_id[i] <- names(diff.lt[[i]][1])
+                annot.df$hypo_id[i] <- names(diff.lt[[i]][2])
+              }
+            }else{
+              annot.df <- NULL
+            }
+            
+            ## matrix arrange 
+            annot.df$hyper_id <- annot.df$hyper_id %>% factor(levels = colnames(mt))
+            annot.df$hypo_id <- annot.df$hypo_id %>% factor(levels = colnames(mt))
+            annot.df <- annot.df %>% arrange(hyper_id,-hyper_exp,hypo_id,hypo_exp)
+            
+            
+            ## entropy-based method to enhance arrange
+            if(input$doEBClustering){
+              mt <- annot.df[,1:ncol(mt)] %>% as.matrix
+              SUM_E <- row.names(mt) %>% sapply(
+                function(row_id){
+                  mt[row_id,] %>% sum
+                }
+              )
+              R.mt<- log2(mt/SUM_E)*(mt/SUM_E)
+              H.mt <- R.mt %>% row.names %>% sapply(
+                function(row_id){
+                  -R.mt[row_id,] %>% sum(na.rm = T)
+                }
+              )
+              annot.df <- annot.df %>% mutate("entropy" = H.mt) %>% 
+                filter(entropy<=input$EBC_cutoff) %>% 
+                arrange(hyper_id,hypo_id,entropy)
+            }
+            
+            ## clean annotation and return the matrix
+            mt <- annot.df[,1:ncol(mt)] %>% as.matrix
+            
+          }else{
+            mt <- NULL
+          }
+          cat("Marker matrix generated\n")
+        }else{
+          mt <- NULL
+          cat("No Marker matrix!\n")
+        }
+        mt
+      },
+      warning = function(war){
+        print(war)
+        mt <- NULL
+      },
+      error = function(err){
+        print(conditionMessage(err));
+        mt <- NULL
       }
     )
   })
@@ -443,14 +659,76 @@ server <- function(input, output, session){
       }
     )
   })
+  plot_marker_heatmap <- eventReactive(c(input$doPlot), {
+    tryCatch(
+      {
+        if(!is.null(input$matrix_file$datapath)){
+          
+          mt <- clustered_matrix()
+          col_m <- color_m()
+          
+          if(length(col_m)>0){
+            hp <- Heatmap(
+              mt,
+              col = col_m,
+              cluster_rows = F,
+              cluster_columns = F,
+              show_column_names = input$showColName,
+              show_row_names = input$showRowName,
+              name = "Value",
+              show_heatmap_legend = F,
+            )
+          }else{
+            hp <- Heatmap(
+              mt,
+              cluster_rows = F,
+              cluster_columns = F,
+              show_column_names = input$showColName,
+              show_row_names = input$showRowName,
+              name = "Value",
+              show_heatmap_legend = F,
+            )
+          }
+          
+        }else{
+          hp <- NULL
+        }
+        hp
+      },
+      warning = function(war){
+        print(war)
+        hp <- NULL
+      },
+      error = function(err){
+        print(conditionMessage(err));
+        hp <- NULL
+      }
+    )
+  })
+  
+  # observe
+  observe({
+    check <- (input$doEELClustering)|(input$doEBClustering)
+    updateCheckboxInput(session, "doEELClustering", value = check)
+  })
+  observe({
+    maxExp <- max_exp()
+    minExp <- min_exp()
+    updateSliderInput(session, "EEL_cutoff", min = minExp, max = maxExp,
+                      value = minExp, step = (maxExp-minExp)/10)
+  })
   
   # output
- 
   output$hp <- renderPlot(plot_heatmap())
   output$hp_little <- renderPlot(plot_pure_heatmap())
+  output$hp_marker <- renderPlot(plot_marker_heatmap())
+  
+  output$tbEstimate <- renderText(table_estimate())
+  output$exampleTb <- renderDataTable(example_table())
+  
   output$col_term <- renderText(ann_c_term())
   output$row_term <- renderText(ann_r_term())
-  output$col_term <- renderText(ann_c_term())
+  
   output$heatmap.pdf <- downloadHandler(
     filename = function() {
       paste0(Sys.Date(), "_heatmap", ".pdf")
@@ -459,6 +737,7 @@ server <- function(input, output, session){
       pdf(file)
       print(plot_heatmap())
       print(plot_pure_heatmap())
+      print(plot_marker_heatmap())
       graphics.off()
     }
   )
