@@ -40,7 +40,7 @@ css <- "mark{
 ui <- navbarPage(
   # Title 
   titlePanel(
-    h3("Easier Heatmap"),
+    h3("  Easier Heatmap"),
     windowTitle = "Easier_Heatmap"
   ),
   theme = bs_theme(
@@ -50,6 +50,8 @@ ui <- navbarPage(
   sidebarLayout(
     # side panel
     sidebarPanel(
+      HTML('<h5><b><p style="color:#00E3E3">Data manager</p></b></h5>'),
+      
       ## file input
       fileInput(
         "matrix_file", h6(strong("Matrix"), style = "color:#97CBFF"),
@@ -69,28 +71,33 @@ ui <- navbarPage(
       ## output setting
       fluidRow(
         column(
-          actionButton(inputId="doPlot", label=" Plot",
-                       icon=icon(name = "palette")),
-          width = 3
+          downloadButton("heatmap.pdf", "Heatmap"),
+          width = 4
         ),
         column(
-          downloadButton("heatmap.pdf", "PDF"),
-          width = 3
+          downloadButton("marker.tsv", "Marker"),
+          width = 4
         ),
         column(
-          downloadButton("marker.tsv", "TSV"),
-          width = 3
+          actionButton(inputId='_', label="Source",
+                       icon = icon("github"), 
+                       onclick ="window.open('https://github.com/AndrewChen116/EasierHeatmap')"),
+          width = 4
         )
       ),
       ## print execution time
       htmlOutput("print_time") %>% h6(.,align="center",style = "color:#B3D9D9"),
       plotOutput("hp_little", height = "200px"),
-      br(),
-      br(),
-      br(),
+      
       ## version info
       h6("20220907_KLC_v0.2.0",align="right",style = "color:#6C6C6C"),
-      h6("Powered by ComplexHeatmap",align="right",style = "color:#6C6C6C"),
+      br(),
+      br(),
+      br(),
+      br(),
+      "Powered by ",
+      tags$a(href="'https://github.com/jokergoo/ComplexHeatmap", "ComplexHeatmap"),
+      
       ## width of sidebarPanel
       width = 3
       
@@ -103,152 +110,183 @@ ui <- navbarPage(
       ## output table
       tabsetPanel(
         tabPanel(
-          h5("Preview",style = "color:#97CBFF"),
-          h6("Here presents example table from raw data",style = "color:#97CBFF"),
-          textOutput('tbEstimate'),
+          HTML('<h5><b><p style="color:#97CBFF">Preview</p></b></h5>'),
+          htmlOutput('tbEstimate'),
           h5("   ",style = "color:#97CBFF"),
           dataTableOutput("exampleTb")
         ),
         tabPanel(
-          h5("Setting",style = "color:#97CBFF"),
-          h6("Hierarchical Clustering",style = "color:#97CBFF"),
+          HTML('<h5><b><p style="color:#97CBFF">Heatmap</p></b></h5>'),
           fluidRow(
             column(
-              checkboxInput(
-                "doColClustering",
-                "Column clustering",
-                c(T)
-              ),
-              width = 3
+              HTML('<h5><b><p style="color:#00E3E3">Plot</p></b></h5>'),
+              plotOutput("hp",
+                         width = "700px",
+                         height = "550px"),
+              width = 8
             ),
             column(
-              checkboxInput(
-                "doRowClustering",
-                "Row clustering",
-                c(T)
+              fluidRow(
+                column(
+                  HTML('<h5><b><p style="color:#00E3E3">Dashboard</p></b></h5>'),
+                  width = 8
+                ),
+                column(
+                  h6(""),
+                  actionButton(inputId="doPlot", label=" Plot",
+                               icon=icon(name = "palette")),
+                  width = 4
+                )
               ),
-              width = 3
-            )
-          ),
-          h6("Annotation",style = "color:#97CBFF"),
-          fluidRow(
-            column(
-              checkboxInput(
-                "showColName",
-                "Show coloumn name",
-                c(T)
+              h6("Hierarchical Clustering",style = "color:#97CBFF"),
+              fluidRow(
+                column(
+                  checkboxInput(
+                    "doRowClustering",
+                    "ROW clustering",
+                    c(T)
+                  ),
+                  width = 6
+                ),
+                column(
+                  checkboxInput(
+                    "doColClustering",
+                    "COL clustering",
+                    c(T)
+                  ),
+                  width = 6
+                )
               ),
-              width = 3
-            ),
-            column(
-              checkboxInput(
-                "showRowName",
-                "Show row name",
-                c(T)
+              h6("Label",style = "color:#97CBFF"),
+              fluidRow(
+                column(
+                  checkboxInput(
+                    "showRowName",
+                    "show ROW name",
+                    c(T)
+                  ),
+                  width = 6
+                ),
+                column(
+                  checkboxInput(
+                    "showColName",
+                    "show COL name",
+                    c(T)
+                  ),
+                  width = 6
+                )
               ),
-              width = 3
-            )
-          ),
-          h6("Transpose",style = "color:#97CBFF"),
-          fluidRow(
-            column(
-              checkboxInput(
-                "doTranspose",
-                "Transpose the matrix",
-                c(F)
+              h6("Transpose",style = "color:#97CBFF"),
+              fluidRow(
+                column(
+                  checkboxInput(
+                    "doTranspose",
+                    "Transpose the matrix",
+                    c(F)
+                  ),
+                  width = 12
+                )
               ),
-              width = 3
+              HTML('<h5><b><p style="color:#00E3E3">Palette</p></b></h5>'),
+              h6("set the point of main legend",style = "color:#97CBFF"),
+              textInput(
+                "point_m",
+                NULL,
+                "0,0.5,1"
+              ),
+              h6("set the color of main legend",style = "color:#97CBFF"),
+              textInput(
+                "color_m",
+                NULL,
+                "black,orange,gold"
+              ),
+              h6("set the color of ROW annotation legend",style = "color:#97CBFF"),
+              textInput(
+                "color_c",
+                NULL
+              ),
+              textOutput('col_term'),
+              h6("set the color of COL annotation legend",style = "color:#97CBFF"),
+              textInput(
+                "color_r",
+                NULL
+              ),
+              textOutput('row_term'),
+              width = 4
             )
           ),
           
           width = 1
         ),
         tabPanel(
-          h5("Palette",style = "color:#97CBFF"),
-          h6("set the point of main legend",style = "color:#97CBFF"),
-          textInput(
-            "point_m",
-            NULL,
-            "0,0.5,1"
-          ),
-          h6("set the color of main legend",style = "color:#97CBFF"),
-          textInput(
-            "color_m",
-            NULL,
-            "black,orange,gold"
-          ),
-          br(),
-          h6("set the color of column annotation legend",style = "color:#97CBFF"),
-          textInput(
-            "color_c",
-            ""
-          ),
-          textOutput('col_term'),
-          br(),
-          h6("set the color of row annotation legend",style = "color:#97CBFF"),
-          textInput(
-            "color_r",
-            ""
-          ),
-          textOutput('row_term'),
-          br(),
-          width = 1
-        ),
-        tabPanel(
-          h5("Heatmap",style = "color:#97CBFF"),
-          plotOutput("hp",
-                     width = "700px",
-                     height = "550px"),
-          width = 1
-        ),
-        tabPanel(
-          h5("Marker",style = "color:#97CBFF"),
-          h6(" ",style = "color:#97CBFF"),
+          HTML('<h5><b><p style="color:#97CBFF">Marker</p></b></h5>'),
           fluidRow(
             column(
+              HTML('<h5><b><p style="color:#00E3E3">Stairs plot</p></b></h5>'),
+              HTML('<h6><p style="color:grey">Suggestion: original number of ROWs > 50</p></h6>'),
+              htmlOutput('mkEstimate'),
+              plotOutput("hp_marker",
+                         width = "700px",
+                         height = "550px"),
+              width = 8
+            ),
+            
+            column(
+              HTML('<h5><b><p style="color:#00E3E3">Dashboard</p></b></h5>'),
               checkboxInput(
                 "doEELClustering",
                 "EEL-based selection",
                 c(F)
               ),
-              width = 3
-            ),
-            column(width = 1),
-            column(
-              checkboxInput(
-                "doEBClustering",
-                "Entropy-based selection",
-                c(F)
-              ),
-              width = 3
-            )
-          ),
-          fluidRow(
-            column(
               sliderInput(
                 "EEL_cutoff",
                 NULL,
                 min = 0, max = 1, value = 0
               ),
-              width = 3
-            ),
-            column(width = 1),
-            column(
+              checkboxInput(
+                "doEBClustering",
+                "Entropy-based selection",
+                c(F)
+              ),
               sliderInput(
                 "EBC_cutoff",
                 NULL,
                 min = 0, max = 4, step = 0.1, value = 4
               ),
-              width = 3
-            ),
-            column(
-              plotOutput("hp_marker",
-                         width = "700px",
-                         height = "550px"),
-              width = 9
+              h6("Label",style = "color:#97CBFF"),
+              fluidRow(
+                column(
+                  checkboxInput(
+                    "showRowName_m",
+                    "show ROW name",
+                    c(T)
+                  ),
+                  width = 6
+                ),
+                column(
+                  checkboxInput(
+                    "showColName_m",
+                    "show COL name",
+                    c(T)
+                  ),
+                  width = 6
+                )
+              ),
+              h6("Transpose",style = "color:#97CBFF"),
+              fluidRow(
+                column(
+                  checkboxInput(
+                    "doTranspose_m",
+                    "Transpose the matrix",
+                    c(F)
+                  ),
+                  width = 12
+                )
+              ),
+
+              width = 4
             )
           ),
-         
         ),
       ),
       ## width of mainPanel

@@ -7,12 +7,23 @@ server <- function(input, output, session){
     tryCatch(
       {
         if(!is.null(input$matrix_file$datapath)){
-          mt <- input$matrix_file$datapath %>%
+          df <- input$matrix_file$datapath %>%
             read.csv(sep = "\t",
                      row.names = 1,
-                     check.names = F) %>% 
-            as.matrix()
+                     check.names = F)
+            
+          format_check <- colnames(df) %>% lapply(
+            function(col_id){
+              df[[col_id]] %>% class
+            }
+          ) %>% unlist
           
+          if(sum(format_check=="character")){
+            mt <- NULL
+          }else{
+            mt <- df %>% as.matrix
+          }
+            
           cat("Imported matrix file checked\n")
         }else{
           mt <- NULL
@@ -92,7 +103,13 @@ server <- function(input, output, session){
           mt <- matrix_table()
           n_row <- nrow(mt)
           n_col <- ncol(mt)
-          txt <- paste0("ROW( ",n_row," ) X COL( ",n_col," )")
+
+          if(!is.null(n_row)&!is.null(n_col)){
+            txt <- paste0('<h6><p style="color:#97CBFF"><b>ROW</b>( ',n_row,
+                          ' ) X <b>COL</b>( ',n_col,' )</p></h6>')
+          }else{
+            txt <- '<h6><p style="color:#CE0000">Character detected, please check format! </p></h6>'
+          }
           
         }else{
           txt <- NULL
@@ -117,14 +134,14 @@ server <- function(input, output, session){
           n_row <- nrow(mt)
           n_col <- ncol(mt)
           
-          if(n_row<10 & n_col<5){
+          if(n_row<10 & n_col<10){
             mt <- mt[c(1:n_row),c(1:n_col)]
-          }else if(n_row>=10 & n_col<5){
+          }else if(n_row>=10 & n_col<10){
             mt <- mt[c(1:10),c(1:n_col)]
-          }else if(n_row<10 & n_col>=5){
-            mt <- mt[c(1:n_row),c(1:5)]
+          }else if(n_row<10 & n_col>=10){
+            mt <- mt[c(1:n_row),c(1:10)]
           }else{
-            mt <- mt[c(1:10),c(1:5)]
+            mt <- mt[c(1:10),c(1:10)]
           }
           
           cat("Example table generated\n")
@@ -191,7 +208,8 @@ server <- function(input, output, session){
   
   # clustering to figure out markers
   clustered_matrix <- eventReactive(
-    c(input$doEBClustering,input$doEBClustering, input$EEL_cutoff,input$EBC_cutoff),
+    c(input$doEELClustering,input$doEBClustering, input$EEL_cutoff,input$EBC_cutoff,
+      input$showColName_m,input$showRowName_m,input$doTranspose_m),
     {
     tryCatch(
       {
@@ -199,7 +217,7 @@ server <- function(input, output, session){
           if(input$doEELClustering|input$doEBClustering){
             ## import matrix
             mt <- matrix_table()
-            if(input$doTranspose){
+            if(input$doTranspose_m){
               mt <- t(mt)
             }
             
@@ -301,6 +319,43 @@ server <- function(input, output, session){
       }
     )
   })
+  
+  marker_estimate <- eventReactive(
+    c(input$doEELClustering,input$doEBClustering, input$EEL_cutoff,input$EBC_cutoff,
+      input$showColName_m,input$showRowName_m,input$doTranspose_m),
+    {
+    tryCatch(
+      {
+        if(!is.null(input$matrix_file$datapath)){
+          mt <- clustered_matrix()
+          n_row <- nrow(mt)
+          n_col <- ncol(mt)
+          
+          if(!is.null(n_row)&!is.null(n_col)){
+            txt <- paste0('<h6><p style="color:#97CBFF"><b>ROW</b>( ',n_row,
+                          ' ) X <b>COL</b>( ',n_col,' )</p></h6>')
+          }else if(input$doEELClustering|input$doEBClustering){
+            txt <- '<h6><p style="color:#CE0000">No marker identified, please check setting! </p></h6>'
+          }else{
+            txt <- NULL
+          }
+          
+        }else{
+          txt <- NULL
+        }
+        txt
+      },
+      warning = function(war){
+        print(war)
+        txt <- NULL
+      },
+      error = function(err){
+        print(conditionMessage(err));
+        txt <- NULL
+      }
+    )
+  })
+  
   
   # color setting
   ann_c_term <-  reactive({
@@ -662,7 +717,8 @@ server <- function(input, output, session){
     )
   })
   plot_marker_heatmap <- eventReactive(
-    c(input$doEBClustering,input$doEBClustering, input$EEL_cutoff,input$EBC_cutoff),
+    c(input$doEELClustering,input$doEBClustering, input$EEL_cutoff,input$EBC_cutoff,
+      input$showColName_m,input$showRowName_m,input$doTranspose_m),
     {
     tryCatch(
       {
@@ -677,8 +733,8 @@ server <- function(input, output, session){
               col = col_m,
               cluster_rows = F,
               cluster_columns = F,
-              show_column_names = input$showColName,
-              show_row_names = input$showRowName,
+              show_column_names = input$showColName_m,
+              show_row_names = input$showRowName_m,
               name = "Value",
               show_heatmap_legend = F,
             )
@@ -687,8 +743,8 @@ server <- function(input, output, session){
               mt,
               cluster_rows = F,
               cluster_columns = F,
-              show_column_names = input$showColName,
-              show_row_names = input$showRowName,
+              show_column_names = input$showColName_m,
+              show_row_names = input$showRowName_m,
               name = "Value",
               show_heatmap_legend = F,
             )
@@ -738,13 +794,14 @@ server <- function(input, output, session){
   output$hp_marker <- renderPlot(plot_marker_heatmap())
   
   output$tbEstimate <- renderText(table_estimate())
+  output$mkEstimate <- renderText(marker_estimate())
   output$exampleTb <- renderDataTable(example_table())
   
   output$col_term <- renderText(ann_c_term())
   output$row_term <- renderText(ann_r_term())
   
   output$heatmap.pdf <- downloadHandler(
-    filename = function() {
+    filename = function(x) {
       paste0(Sys.Date(), "_heatmap", ".pdf")
     },
     content = function(file) {
@@ -757,12 +814,12 @@ server <- function(input, output, session){
   )
   
   output$marker.tsv <- downloadHandler(
-    filename = function() {
+    filename = function(x) {
       paste0(Sys.Date(), "_marker.tsv")
     },
     content = function(file) {
       write.table(
-        clustered_matrix(),
+        clustered_matrix() %>% as.data.frame %>% rownames_to_column,
         file,
         sep = "\t",
         quote = F
