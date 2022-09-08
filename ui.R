@@ -91,12 +91,11 @@ ui <- navbarPage(
       
       ## version info
       h6("20220907_KLC_v0.2.0",align="right",style = "color:#6C6C6C"),
+      h6("Powered by ComplexHeatmap",align="right",style = "color:#6C6C6C"),
       br(),
       br(),
       br(),
       br(),
-      "Powered by ",
-      tags$a(href="'https://github.com/jokergoo/ComplexHeatmap", "ComplexHeatmap"),
       
       ## width of sidebarPanel
       width = 3
